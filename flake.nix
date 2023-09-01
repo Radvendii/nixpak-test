@@ -62,14 +62,10 @@
             network = true;
             shareIpc = true;
 
-            # lists of paths to be mounted inside the sandbox
-            # supports runtime resolution of environment variables
-            # see "Sloth values" below
             bind.rw = [
               # double check if this is necessary
               (sloth.env "XDG_RUNTIME_DIR")
               # TODO: can we just take the firefox subdirectory
-              # FIXME: still complains about not being able to read configuration
               (sloth.concat' sloth.homeDir "/.mozilla")
               (sloth.concat' sloth.homeDir "/.thunderbird")
               (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/.mozilla")
@@ -111,6 +107,7 @@
             buildCommand = old.buildCommand + ''
               # bubblewrapped firefox will complain about not being able to read configuration
               # for some reason it can find autoconfig.js, but not mozilla.cfg
+              # it wasn't being used for anything anyways, though
               rm $out/lib/firefox/defaults/pref/autoconfig.js
             '';
           });
@@ -149,20 +146,15 @@
             network = true;
             shareIpc = true;
 
-            # lists of paths to be mounted inside the sandbox
-            # supports runtime resolution of environment variables
-            # see "Sloth values" below
             bind.rw = [
               # double check if this is necessary
               (sloth.env "XDG_RUNTIME_DIR")
-              # TODO: can we just take the firefox subdirectory
-              # FIXME: still complains about not being able to read configuration
+              # TODO: can we just take the thunderbird subdirectory
               (sloth.concat' sloth.homeDir "/.mozilla")
               (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/.mozilla")
               (sloth.concat' sloth.homeDir "/Downloads")
             ];
             bind.ro = [
-              # (sloth.concat' sloth.homeDir "/Downloads")
               # TODO: replace with nixpak-specific font config?
               "/etc/fonts"
 
