@@ -36,10 +36,20 @@
         inherit pkgs;
       };
 
+      mozillaConfigOverride = pkg: pkg.overrideAttrs (old: {
+        buildCommand = old.buildCommand + ''
+          # they will complain about not being able to read configuration
+          # for some reason it can find autoconfig.js, but not mozilla.cfg
+          # it wasn't being used for anything anyways, though
+          find $out -name "autoconfig.js" -exec rm {} \;
+          # rm $out/lib/*/defaults/pref/autoconfig.js
+        '';
+      });
+
       thunderbird = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
-          app.package = pkgs.thunderbird;
+          app.package = mozillaConfigOverride pkgs.thunderbird;
 
           dbus = {
             enable = true;
@@ -78,16 +88,6 @@
 
               # ???
               "/etc/resolv.conf"
-              "/sys/devices/pci0000:00"
-              # for hardware acceleration maybe?
-              "/sys/bus/pci"
-
-              # pulseaudio socket
-              # is this necessary? we already bind a containing directory rw
-              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
-
-              # maybe needed for anything configured by home manager??
-              (sloth.concat' sloth.homeDir "/.nix-profile")
 
               (sloth.concat' sloth.homeDir "/.Xauthority")
             ];
@@ -103,14 +103,7 @@
       firefox = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
-          app.package = pkgs.firefox.overrideAttrs (old: {
-            buildCommand = old.buildCommand + ''
-              # bubblewrapped firefox will complain about not being able to read configuration
-              # for some reason it can find autoconfig.js, but not mozilla.cfg
-              # it wasn't being used for anything anyways, though
-              rm $out/lib/firefox/defaults/pref/autoconfig.js
-            '';
-          });
+          app.package = mozillaConfigOverride pkgs.firefox;
 
           dbus = {
             enable = true;
@@ -167,9 +160,6 @@
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
-
-              # maybe needed for anything configured by home manager
-              (sloth.concat' sloth.homeDir "/.nix-profile")
 
               (sloth.concat' sloth.homeDir "/.Xauthority")
 
