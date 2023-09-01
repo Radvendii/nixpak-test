@@ -46,6 +46,7 @@
         '';
       });
 
+      # MANIFEST: https://github.com/flathub/org.mozilla.Thunderbird/blob/master/org.mozilla.Thunderbird.json#L13
       thunderbird = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
@@ -53,8 +54,6 @@
 
           dbus = {
             enable = true;
-            # copied from the flatpak manifest
-            # SEE: https://github.com/flathub/org.mozilla.Thunderbird/blob/master/org.mozilla.Thunderbird.json#L13
             policies = {
               "org.freedesktop.DBus" = "talk";
               "org.ally.Bus" = "talk";
@@ -100,6 +99,7 @@
 
       };
 
+      # MANIFEST: https://hg.mozilla.org/mozilla-central/file/tip/taskcluster/docker/firefox-flatpak/runme.sh
       firefox = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
@@ -107,9 +107,7 @@
 
           dbus = {
             enable = true;
-            # copied from the flatpak manifest
-            # SEE: https://hg.mozilla.org/mozilla-central/file/tip/taskcluster/docker/firefox-flatpak/runme.sh
-            # TODO: the organization of these should be flipped.
+            # TODO: the organization of these should be flipped (upstream).
             # talk = [
             #   "org.freedesktop.DBus"
             #   "or.ally.Bus"
@@ -171,6 +169,8 @@
           };
         };
       };
+
+      # MANIFEST: https://github.com/flathub/org.chromium.Chromium/blob/master/org.chromium.Chromium.yaml
       chromium = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
@@ -178,8 +178,6 @@
 
           dbus = {
             enable = true;
-            # copied from the flatpak manifest
-            # SEE: https://github.com/flathub/org.chromium.Chromium/blob/master/org.chromium.Chromium.yaml
             policies = {
               # should be system-talk
               # SEE: https://github.com/nixpak/nixpak/issues/6
@@ -247,6 +245,7 @@
           };
         };
       };
+      # MANIFEST: https://github.com/flathub/org.signal.Signal/blob/master/org.signal.Signal.yaml
       signal = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
@@ -254,8 +253,6 @@
 
           dbus = {
             enable = true;
-            # copied from the flatpak manifest
-            # SEE: https://github.com/flathub/org.signal.Signal/blob/master/org.signal.Signal.yaml
             policies = {
               # We need to send notifications
               "org.freedesktop.Notifications" = "talk";
@@ -310,10 +307,19 @@
         };
       };
     in {
-      firefox = firefox.config.env;
-      thunderbird = thunderbird.config.env;
-      chromium = chromium.config.env;
-      signal = signal.config.env;
+      firefox = firefox.config.env.override {
+        # TODO: upstream. this should be done by default
+        meta.mainProgram = pkgs.firefox.meta.mainProgram;
+      };
+      thunderbird = thunderbird.config.env.override {
+        meta.mainProgram = pkgs.thunderbird.meta.mainProgram;
+      };
+      chromium = chromium.config.env.override {
+        meta.mainProgram = pkgs.chromium.meta.mainProgram;
+      };
+      signal = signal.config.env.override {
+        meta.mainProgram = pkgs.signal-desktop.meta.mainProgram;
+      };
 
       shell = (mkNixPak {
         config = { sloth, pkgs, ... }: {
