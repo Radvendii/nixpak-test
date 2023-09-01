@@ -267,6 +267,9 @@
               "org.freedesktop.portal.Fcitx" = "talk";
               # This is needed for the tray icon
               "org.kde.*" = "own";
+
+              # FIXME: signal doesn't know how to use this
+              # "org.freedesktop.portal.*" = "talk";
             };
           };
 
@@ -281,9 +284,8 @@
             bind.rw = [
               # double check if this is necessary
               (sloth.env "XDG_RUNTIME_DIR")
-              # (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/Signal")
-              # (sloth.concat' sloth.homeDir "/Downloads")
-              sloth.homeDir
+              (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/Signal")
+              (sloth.concat' sloth.homeDir "/Downloads")
             ];
             bind.ro = [
               # TODO: replace with nixpak-specific font config?
@@ -298,6 +300,8 @@
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
+
+              (sloth.concat' sloth.homeDir "/.Xauthority")
             ];
             bind.dev = [
             # ???
@@ -318,7 +322,7 @@
         meta.mainProgram = pkgs.chromium.meta.mainProgram;
       };
       signal = signal.config.env.override {
-        meta.mainProgram = pkgs.signal-desktop.meta.mainProgram;
+        meta.mainProgram = "signal-desktop";
       };
 
       shell = (mkNixPak {
