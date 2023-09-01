@@ -195,6 +195,9 @@
               "org.kde.kwalletd5" = "talk";
               "org.gnome.SessionManager" = "talk";
               "org.mpris.MediaPlayer2.chromium.*" = "own";
+
+              # not in manifest, but will use filepicker
+              "org.freedesktop.portal.*" = "talk";
             };
           };
 
@@ -206,13 +209,15 @@
             network = true;
             shareIpc = true;
 
+            # so it can create a socket
+            tmpfs = [ "/tmp" ];
+
             bind.rw = [
               # double check if this is necessary
               (sloth.env "XDG_RUNTIME_DIR")
-              # (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/chromium")
-              # (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/chromium")
-              # (sloth.concat' sloth.homeDir "/Downloads")
-              sloth.homeDir
+              (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/chromium")
+              (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/chromium")
+              (sloth.concat' sloth.homeDir "/Downloads")
               "/run/.heim_org.h5l.kcm-socket"
             ];
             bind.ro = [
