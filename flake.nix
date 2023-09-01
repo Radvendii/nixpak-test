@@ -181,9 +181,81 @@
           };
         };
       };
+      chromium = mkNixPak {
+        config = { sloth, pkgs, ... }: {
+
+          app.package = pkgs.chromium;
+
+          dbus = {
+            enable = true;
+            # copied from the flatpak manifest
+            # SEE: https://github.com/flathub/org.chromium.Chromium/blob/master/org.chromium.Chromium.yaml
+            policies = {
+              # should be system-talk
+              # SEE: https://github.com/nixpak/nixpak/issues/6
+              "org.bluez" = "talk";
+              "org.freedesktop.Avahi" = "talk";
+              "org.freedesktop.UPower" = "talk";
+
+              "com.canonical.AppMenu.Registrar" = "talk";
+              "org.freedesktop.FileManager1" = "talk";
+              "org.freedesktop.Notifications" = "talk";
+              "org.freedesktop.ScreenSaver" = "talk";
+              "org.freedesktop.secrets" = "talk";
+              "org.kde.kwalletd5" = "talk";
+              "org.gnome.SessionManager" = "talk";
+              "org.mpris.MediaPlayer2.chromium.*" = "own";
+            };
+          };
+
+          flatpak.appId = "org.chromium.Chromium";
+
+          etc.sslCertificates.enable = true;
+
+          bubblewrap = {
+            network = true;
+            shareIpc = true;
+
+            bind.rw = [
+              # double check if this is necessary
+              (sloth.env "XDG_RUNTIME_DIR")
+              # (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/chromium")
+              # (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/chromium")
+              # (sloth.concat' sloth.homeDir "/Downloads")
+              sloth.homeDir
+              "/run/.heim_org.h5l.kcm-socket"
+            ];
+            bind.ro = [
+              # TODO: replace with nixpak-specific font config?
+              "/etc/fonts"
+
+              # ???
+              "/etc/resolv.conf"
+              "/sys/devices/pci0000:00"
+              # for hardware acceleration maybe?
+              "/sys/bus/pci"
+
+              # pulseaudio socket
+              # is this necessary? we already bind a containing directory rw
+              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
+
+              # maybe needed for anything configured by home manager
+              # (sloth.concat' sloth.homeDir "/.nix-profile")
+
+              # (sloth.concat' sloth.homeDir "/.Xauthority")
+
+            ];
+            bind.dev = [
+            # ???
+              "/dev/dri"
+            ];
+          };
+        };
+      };
     in {
       firefox = firefox.config.env;
       thunderbird = thunderbird.config.env;
+      chromium = chromium.config.env;
 
       shell = (mkNixPak {
         config = { sloth, pkgs, ... }: {
