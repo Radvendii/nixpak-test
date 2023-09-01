@@ -107,7 +107,13 @@
       firefox = mkNixPak {
         config = { sloth, pkgs, ... }: {
 
-          app.package = pkgs.firefox;
+          app.package = pkgs.firefox.overrideAttrs (old: {
+            buildCommand = old.buildCommand + ''
+              # bubblewrapped firefox will complain about not being able to read configuration
+              # for some reason it can find autoconfig.js, but not mozilla.cfg
+              rm $out/lib/firefox/defaults/pref/autoconfig.js
+            '';
+          });
 
           dbus = {
             enable = true;
