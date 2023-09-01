@@ -44,13 +44,7 @@
           dbus = {
             enable = true;
             # copied from the flatpak manifest
-            # SEE: https://github.com/flathub/org.mozilla.Thunderbird/blob/master/org.mozilla.Thunderbird.json
-            # TODO: the organization of these should be flipped.
-            # talk = [
-            #   "org.freedesktop.DBus"
-            #   "or.ally.Bus"
-            #   ...
-            # ];
+            # SEE: https://github.com/flathub/org.mozilla.Thunderbird/blob/master/org.mozilla.Thunderbird.json#L13
             policies = {
               "org.freedesktop.DBus" = "talk";
               "org.ally.Bus" = "talk";
@@ -60,7 +54,7 @@
             };
           };
 
-          flatpak.appId = "org.mozilla.Firefox";
+          flatpak.appId = "org.mozilla.Thunderbird";
 
           etc.sslCertificates.enable = true;
 
@@ -92,9 +86,6 @@
               # for hardware acceleration maybe?
               "/sys/bus/pci"
 
-              # x11
-              # "/tmp/.X11-unix/X0"
-
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
@@ -103,10 +94,6 @@
               (sloth.concat' sloth.homeDir "/.nix-profile")
 
               (sloth.concat' sloth.homeDir "/.Xauthority")
-
-              # none of this seems needed
-              # [ "/run/current-system/sw/share/dbus-1" "/usr/share/dbus-1"]
-              # "/run/current-system/sw/share/dbus-1"
             ];
             bind.dev = [
             # ???
@@ -179,9 +166,6 @@
               # for hardware acceleration maybe?
               "/sys/bus/pci"
 
-              # x11
-              # "/tmp/.X11-unix/X0"
-
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
@@ -191,9 +175,6 @@
 
               (sloth.concat' sloth.homeDir "/.Xauthority")
 
-              # none of this seems needed
-              # [ "/run/current-system/sw/share/dbus-1" "/usr/share/dbus-1"]
-              # "/run/current-system/sw/share/dbus-1"
             ];
             bind.dev = [
             # ???
