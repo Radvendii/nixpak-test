@@ -237,8 +237,70 @@
               # maybe needed for anything configured by home manager
               # (sloth.concat' sloth.homeDir "/.nix-profile")
 
-              # (sloth.concat' sloth.homeDir "/.Xauthority")
+              (sloth.concat' sloth.homeDir "/.Xauthority")
 
+            ];
+            bind.dev = [
+            # ???
+              "/dev/dri"
+            ];
+          };
+        };
+      };
+      signal = mkNixPak {
+        config = { sloth, pkgs, ... }: {
+
+          app.package = pkgs.signal-desktop;
+
+          dbus = {
+            enable = true;
+            # copied from the flatpak manifest
+            # SEE: https://github.com/flathub/org.signal.Signal/blob/master/org.signal.Signal.yaml
+            policies = {
+              # We need to send notifications
+              "org.freedesktop.Notifications" = "talk";
+              "org.gnome.Mutter.IdleMonitor" = "talk";
+              "org.kde.StatusNotifierWatcher" = "talk";
+              "com.canonical.AppMenu.Registrar" = "talk";
+              "com.canonical.indicator.application" = "talk";
+              "org.ayatana.indicator.application" = "talk";
+              # Allow running in background
+              "org.freedesktop.portal.Background" = "talk";
+              # Allow advanced input methods
+              "org.freedesktop.portal.Fcitx" = "talk";
+              # This is needed for the tray icon
+              "org.kde.*" = "own";
+            };
+          };
+
+          flatpak.appId = "org.signal.Signal";
+
+          etc.sslCertificates.enable = true;
+
+          bubblewrap = {
+            network = true;
+            shareIpc = true;
+
+            bind.rw = [
+              # double check if this is necessary
+              (sloth.env "XDG_RUNTIME_DIR")
+              # (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/Signal")
+              # (sloth.concat' sloth.homeDir "/Downloads")
+              sloth.homeDir
+            ];
+            bind.ro = [
+              # TODO: replace with nixpak-specific font config?
+              "/etc/fonts"
+
+              # ???
+              "/etc/resolv.conf"
+              # "/sys/devices/pci0000:00"
+              # for hardware acceleration maybe?
+              # "/sys/bus/pci"
+
+              # pulseaudio socket
+              # is this necessary? we already bind a containing directory rw
+              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
             ];
             bind.dev = [
             # ???
@@ -251,6 +313,7 @@
       firefox = firefox.config.env;
       thunderbird = thunderbird.config.env;
       chromium = chromium.config.env;
+      signal = signal.config.env;
 
       shell = (mkNixPak {
         config = { sloth, pkgs, ... }: {
