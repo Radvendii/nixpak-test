@@ -260,6 +260,8 @@
 
           app.package = pkgs.signal-desktop;
 
+          gui.enable = true;
+
           dbus = {
             enable = true;
             policies = {
@@ -284,8 +286,6 @@
 
           flatpak.appId = "org.signal.Signal";
 
-          etc.sslCertificates.enable = true;
-
           bubblewrap = {
             network = true;
             shareIpc = true;
@@ -298,18 +298,9 @@
               (sloth.concat' sloth.homeDir "/Downloads")
             ];
             bind.ro = [
-              # TODO: replace with nixpak-specific font config?
-              "/etc/fonts"
-              "/etc/localtime"
-
-              # DNS
-              "/etc/resolv.conf"
-
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.runtimeDir) "/pulse/native")
-
-              (sloth.concat' sloth.homeDir "/.Xauthority")
             ];
             bind.dev = [
               "/dev"
