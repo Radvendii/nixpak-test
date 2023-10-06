@@ -200,6 +200,8 @@
 
           app.package = pkgs.chromium;
 
+          gui.enable = true;
+
           dbus = {
             enable = true;
             policies = {
@@ -225,8 +227,6 @@
 
           flatpak.appId = "org.chromium.Chromium";
 
-          etc.sslCertificates.enable = true;
-
           bubblewrap = {
             network = true;
             shareIpc = true;
@@ -244,22 +244,9 @@
               "/run/.heim_org.h5l.kcm-socket"
             ];
             bind.ro = [
-              # TODO: replace with nixpak-specific font config?
-              "/etc/fonts"
-              "/etc/localtime"
-
-              # ???
-              "/etc/resolv.conf"
-
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.runtimeDir) "/pulse/native")
-
-              # maybe needed for anything configured by home manager
-              # (sloth.concat' sloth.homeDir "/.nix-profile")
-
-              (sloth.concat' sloth.homeDir "/.Xauthority")
-
             ];
             bind.dev = [
               "/dev"
