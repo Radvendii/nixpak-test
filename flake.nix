@@ -1,4 +1,3 @@
-# cursor theme doesn't load
 # can i have not the whole nix store visible? just the runtime closure
 # asks for setting firefox as default every time
 # update-mime-database, update-desktop-database
@@ -32,6 +31,7 @@
             bind.ro = [ 
               # Fonts. SEE: https://github.com/nixpak/nixpak/issues/28
               "/etc/fonts"
+              "/run/current-system/sw/share/icons"
               # timezone. often needed and pretty harmless
               "/etc/localtime"
               # access to displays (for wayland also, I think)
