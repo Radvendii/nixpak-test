@@ -31,6 +31,7 @@
             bind.ro = [ 
               # Fonts. SEE: https://github.com/nixpak/nixpak/issues/28
               "/etc/fonts"
+              # cursor icons
               "/run/current-system/sw/share/icons"
               # timezone. often needed and pretty harmless
               "/etc/localtime"
@@ -58,20 +59,39 @@
           etc.sslCertificates.enable = true;
         };
       };
-    };
-    nixosConfigurations.test = lib.nixosSystem {
-      inherit system;
-      modules = [({pkgs, modulesPath, ...}: {
-        imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
-        virtualisation.graphics = true;
-        services.xserver = {
-          enable = true;
-          displayManager.gdm.enable = true;
-          desktopManager.gnome.enable = true;
+      peripherals = { config, sloth, ... }: {
+        options = {
+          peripherals.enable = lib.mkEnableOption "access to peripherals";
         };
-        environment.systemPackages = builtins.attrValues self.packages.${system};
-      })];
+        config = lib.mkIf config.peripherals.enable {
+          bubblewrap.bind = {
+            ro = [
+              # pulseaudio socket
+              (sloth.concat' (sloth.runtimeDir) "/pulse/native")
+            ];
+            # most manifests mount /dev, but this seems to suffice.
+            dev = [
+              # video capture (webcam)
+              "/dev/video*"
+            ];
+          };
+        };
+      };
     };
+    # nixosConfigurations.test = lib.nixosSystem {
+    #   inherit system;
+    #   modules = [({pkgs, modulesPath, ...}: {
+    #     imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
+    #     virtualisation.graphics = true;
+    #     services.xserver = {
+    #       enable = true;
+    #       displayManager.gdm.enable = true;
+    #       desktopManager.gnome.enable = true;
+    #     };
+    #     environment.systemPackages = builtins.attrValues self.packages.${system};
+    #   })];
+    # };
+    checks = self.packages;
     packages.${system} = let
       pkgs = nixpkgs.legacyPackages.${system};
 
@@ -179,17 +199,6 @@
               # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
             ];
-            bind.ro = [
-              # pulseaudio socket
-              # is this necessary? we already bind a containing directory rw
-              (sloth.concat' (sloth.runtimeDir) "/pulse/native")
-            ];
-            # based on the manifest, it wants everything (mount /dev), but this
-            # seems to suffice.
-            bind.dev = [
-              # video capture (webcam)
-              "/dev/video*"
-            ];
           };
         };
       };
@@ -248,9 +257,6 @@
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.runtimeDir) "/pulse/native")
             ];
-            bind.dev = [
-              "/dev"
-            ];
           };
         };
       };
@@ -301,9 +307,6 @@
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
               (sloth.concat' (sloth.runtimeDir) "/pulse/native")
-            ];
-            bind.dev = [
-              "/dev"
             ];
           };
         };
