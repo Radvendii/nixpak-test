@@ -1,3 +1,7 @@
+# cursor theme doesn't load
+# can i have not the whole nix store visible? just the runtime closure
+# asks for setting firefox as default every time
+# update-mime-database, update-desktop-database
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -13,6 +17,48 @@
     lib = nixpkgs.lib;
   in
   {
+    nixpakModules = {
+      # There are a bunch of options that seem common for gui apps. For now,
+      # support for wayland, but no support for x (access to the x socket is
+      # actually quite a security problem)
+      gui = { sloth, config, ... }: {
+        options.gui = {
+          enable = lib.mkEnableOption "defaults for gui apps";
+          hardwareAcceleration.enable =
+            lib.mkEnableOption "things needed for hardware acceleration" // { default = true; }; 
+        };
+        config = lib.mkIf config.gui.enable {
+          bubblewrap = lib.mkMerge [{
+            bind.ro = [ 
+              # Fonts. SEE: https://github.com/nixpak/nixpak/issues/28
+              "/etc/fonts"
+              # timezone. often needed and pretty harmless
+              "/etc/localtime"
+              # access to displays (for wayland also, I think)
+              (sloth.concat' sloth.homeDir "/.Xauthority")
+            ];
+          } {
+            bind = lib.mkIf config.gui.hardwareAcceleration.enable {
+              ro = [
+                "/sys/bus/pci"
+                # "/sys/devices/pci0000:00"
+              ];
+              dev = [ "/dev/dri" ];
+            };
+          }];
+        };
+      };
+      network = { config, ... }: {
+        config = lib.mkIf config.bubblewrap.network {
+          # DNS is almost always necessary if you want network access
+          bubblewrap.bind.ro = [
+            "/etc/resolv.conf"
+          ];
+          # we want secure network access
+          etc.sslCertificates.enable = true;
+        };
+      };
+    };
     nixosConfigurations.test = lib.nixosSystem {
       inherit system;
       modules = [({pkgs, modulesPath, ...}: {
@@ -23,26 +69,31 @@
           displayManager.gdm.enable = true;
           desktopManager.gnome.enable = true;
         };
-        environment.systemPackages = [
-          self.packages.${system}.firefox
-        ];
+        environment.systemPackages = builtins.attrValues self.packages.${system};
       })];
     };
     packages.${system} = let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      mkNixPak = nixpak.lib.nixpak {
-        inherit (pkgs) lib;
-        inherit pkgs;
-      };
+      mkNixPak = args@{ config, ... }:
+        nixpak.lib.nixpak {
+          inherit (pkgs) lib;
+          inherit pkgs;
+        } (args // {
+          config = {
+            imports = (builtins.attrValues self.nixpakModules) ++ [ config ];
+          };
+        });
 
       mozillaConfigOverride = pkg: pkg.overrideAttrs (old: {
+        # `firefox` and `thunderbird` are defined weirdly, which is why we
+        # override `buildCommand` rather than setting `postInstall`
+        # SEE: https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/networking/browsers/firefox/wrapper.nix
         buildCommand = old.buildCommand + ''
           # they will complain about not being able to read configuration
           # for some reason it can find autoconfig.js, but not mozilla.cfg
           # it wasn't being used for anything anyways, though
           find $out -name "autoconfig.js" -exec rm {} \;
-          # rm $out/lib/*/defaults/pref/autoconfig.js
         '';
       });
 
@@ -51,6 +102,9 @@
         config = { sloth, pkgs, ... }: {
 
           app.package = mozillaConfigOverride pkgs.thunderbird;
+          flatpak.appId = "org.mozilla.Thunderbird";
+
+          gui.enable = true;
 
           dbus = {
             enable = true;
@@ -63,36 +117,21 @@
             };
           };
 
-          flatpak.appId = "org.mozilla.Thunderbird";
-
-          etc.sslCertificates.enable = true;
-
           bubblewrap = {
             network = true;
             shareIpc = true;
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.env "XDG_RUNTIME_DIR")
-              # TODO: can we just take the firefox subdirectory
+              (sloth.runtimeDir)
+              # there are possibly extensions in here so we can't just take the
+              # relevant subdirectory
               (sloth.concat' sloth.homeDir "/.mozilla")
+              # XXX: is this a thing?
               (sloth.concat' sloth.homeDir "/.thunderbird")
-              (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/.mozilla")
+              (sloth.concat' sloth.xdgCacheHome "/.mozilla")
+              # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
-            ];
-            bind.ro = [
-              # (sloth.concat' sloth.homeDir "/Downloads")
-              # TODO: replace with nixpak-specific font config?
-              "/etc/fonts"
-
-              # ???
-              "/etc/resolv.conf"
-
-              (sloth.concat' sloth.homeDir "/.Xauthority")
-            ];
-            bind.dev = [
-            # ???
-              "/dev/dri"
             ];
           };
         };
@@ -104,15 +143,12 @@
         config = { sloth, pkgs, ... }: {
 
           app.package = mozillaConfigOverride pkgs.firefox;
+          flatpak.appId = "org.mozilla.Firefox";
+
+          gui.enable = true;
 
           dbus = {
             enable = true;
-            # TODO: the organization of these should be flipped (upstream).
-            # talk = [
-            #   "org.freedesktop.DBus"
-            #   "or.ally.Bus"
-            #   ...
-            # ];
             policies = {
               "org.freedesktop.FileManager1" = "talk";
               "org.freedesktop.DBus" = "talk";
@@ -129,42 +165,30 @@
             };
           };
 
-          flatpak.appId = "org.mozilla.Firefox";
-
-          etc.sslCertificates.enable = true;
-
           bubblewrap = {
             network = true;
             shareIpc = true;
 
             bind.rw = [
-              # double check if this is necessary
-              (sloth.env "XDG_RUNTIME_DIR")
-              # TODO: can we just take the thunderbird subdirectory
+              # XXX: double check if this is necessary
+              # sloth.runtimeDir
+              # there are possibly extensions in here so we can't just take the
+              # relevant subdirectory
               (sloth.concat' sloth.homeDir "/.mozilla")
-              (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/.mozilla")
+              (sloth.concat' (sloth.xdgCacheHome) "/mozilla/firefox")
+              # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
             ];
             bind.ro = [
-              # TODO: replace with nixpak-specific font config?
-              "/etc/fonts"
-
-              # ???
-              "/etc/resolv.conf"
-              "/sys/devices/pci0000:00"
-              # for hardware acceleration maybe?
-              "/sys/bus/pci"
-
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
-              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
-
-              (sloth.concat' sloth.homeDir "/.Xauthority")
-
+              (sloth.concat' (sloth.runtimeDir) "/pulse/native")
             ];
+            # based on the manifest, it wants everything (mount /dev), but this
+            # seems to suffice.
             bind.dev = [
-            # ???
-              "/dev/dri"
+              # video capture (webcam)
+              "/dev/video*"
             ];
           };
         };
@@ -212,25 +236,24 @@
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.env "XDG_RUNTIME_DIR")
-              (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/chromium")
-              (sloth.concat' (sloth.env "XDG_CACHE_HOME") "/chromium")
+              (sloth.runtimeDir)
+              (sloth.concat' (sloth.xdgConfigHome) "/chromium")
+              (sloth.concat' (sloth.xdgCacheHome) "/chromium")
+              # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
               "/run/.heim_org.h5l.kcm-socket"
             ];
             bind.ro = [
               # TODO: replace with nixpak-specific font config?
               "/etc/fonts"
+              "/etc/localtime"
 
               # ???
               "/etc/resolv.conf"
-              "/sys/devices/pci0000:00"
-              # for hardware acceleration maybe?
-              "/sys/bus/pci"
 
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
-              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
+              (sloth.concat' (sloth.runtimeDir) "/pulse/native")
 
               # maybe needed for anything configured by home manager
               # (sloth.concat' sloth.homeDir "/.nix-profile")
@@ -239,8 +262,7 @@
 
             ];
             bind.dev = [
-            # ???
-              "/dev/dri"
+              "/dev"
             ];
           };
         };
@@ -283,29 +305,27 @@
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.env "XDG_RUNTIME_DIR")
-              (sloth.concat' (sloth.env "XDG_CONFIG_HOME") "/Signal")
+              (sloth.runtimeDir)
+              (sloth.concat' (sloth.xdgConfigHome) "/Signal")
+              # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
             ];
             bind.ro = [
               # TODO: replace with nixpak-specific font config?
               "/etc/fonts"
+              "/etc/localtime"
 
-              # ???
+              # DNS
               "/etc/resolv.conf"
-              # "/sys/devices/pci0000:00"
-              # for hardware acceleration maybe?
-              # "/sys/bus/pci"
 
               # pulseaudio socket
               # is this necessary? we already bind a containing directory rw
-              (sloth.concat' (sloth.env "XDG_RUNTIME_DIR") "/pulse/native")
+              (sloth.concat' (sloth.runtimeDir) "/pulse/native")
 
               (sloth.concat' sloth.homeDir "/.Xauthority")
             ];
             bind.dev = [
-            # ???
-              "/dev/dri"
+              "/dev"
             ];
           };
         };
