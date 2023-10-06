@@ -114,15 +114,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1692283173,
-        "narHash": "sha256-6bt+X2PpoyUAtEDWJM0XT0Z54JA2YHw62VoZRTRkz7s=",
-        "owner": "max-privatevoid",
+        "lastModified": 1696478570,
+        "narHash": "sha256-Zqktub0f4M8K0jDHFYaTwsGUddkH3UqHU0NNfGJmIKY=",
+        "owner": "nixpak",
         "repo": "nixpak",
-        "rev": "eef08f1a7e871e3017edbc54d0374292a9b6f67a",
+        "rev": "271e01d3912c5c622ca7fa99d63d790bea980de0",
         "type": "github"
       },
       "original": {
-        "owner": "max-privatevoid",
+        "owner": "nixpak",
         "repo": "nixpak",
         "type": "github"
       }

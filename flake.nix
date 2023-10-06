@@ -1,11 +1,16 @@
 # can i have not the whole nix store visible? just the runtime closure
+
+# can't get access to webcams
+# it should be using the xdg portal... at least on firefox
+
 # asks for setting firefox as default every time
 # update-mime-database, update-desktop-database
+# (can't reproduce?)
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpak = {
-      url = "github:max-privatevoid/nixpak";
+      url = "github:nixpak/nixpak";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -71,8 +76,23 @@
             ];
             # most manifests mount /dev, but this seems to suffice.
             dev = [
+              # FIXME: none of these work.
+              #        flatpaks get it working by using `--device=all`
+              #        but it's not clear what that translates to in bubblewrap arguments
+              # "/dev/dri"
               # video capture (webcam)
-              "/dev/video*"
+              # "/dev/video0"
+              # "/dev/video1"
+              # "/dev/video2"
+              # "/dev/video3"
+              # "/dev/video4"
+              # "/dev/video5"
+              # "/dev/video6"
+              # "/dev/video7"
+              # "/dev/video8"
+              # "/dev/video9"
+              # "/dev/v4l"
+              # "/dev"
             ];
           };
         };
@@ -143,7 +163,7 @@
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.runtimeDir)
+              # (sloth.runtimeDir)
               # there are possibly extensions in here so we can't just take the
               # relevant subdirectory
               (sloth.concat' sloth.homeDir "/.mozilla")
@@ -245,7 +265,7 @@
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.runtimeDir)
+              # (sloth.runtimeDir)
               (sloth.concat' (sloth.xdgConfigHome) "/chromium")
               (sloth.concat' (sloth.xdgCacheHome) "/chromium")
               # download without a file picker prompt
@@ -298,7 +318,7 @@
 
             bind.rw = [
               # double check if this is necessary
-              (sloth.runtimeDir)
+              # (sloth.runtimeDir)
               (sloth.concat' (sloth.xdgConfigHome) "/Signal")
               # download without a file picker prompt
               (sloth.concat' sloth.homeDir "/Downloads")
