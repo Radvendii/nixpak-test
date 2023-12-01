@@ -1,11 +1,3 @@
-# can i have not the whole nix store visible? just the runtime closure
-
-# can't get access to webcams
-# it should be using the xdg portal... at least on firefox
-
-# asks for setting firefox as default every time
-# update-mime-database, update-desktop-database
-# (can't reproduce?)
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -47,6 +39,7 @@
             bind = lib.mkIf config.gui.hardwareAcceleration.enable {
               ro = [
                 "/sys/bus/pci"
+                # not sure if this is needed
                 # "/sys/devices/pci0000:00"
               ];
               dev = [ "/dev/dri" ];
@@ -98,19 +91,6 @@
         };
       };
     };
-    # nixosConfigurations.test = lib.nixosSystem {
-    #   inherit system;
-    #   modules = [({pkgs, modulesPath, ...}: {
-    #     imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
-    #     virtualisation.graphics = true;
-    #     services.xserver = {
-    #       enable = true;
-    #       displayManager.gdm.enable = true;
-    #       desktopManager.gnome.enable = true;
-    #     };
-    #     environment.systemPackages = builtins.attrValues self.packages.${system};
-    #   })];
-    # };
     checks = self.packages;
     packages.${system} = let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -167,7 +147,7 @@
               # there are possibly extensions in here so we can't just take the
               # relevant subdirectory
               (sloth.concat' sloth.homeDir "/.mozilla")
-              # XXX: is this a thing?
+              # TODO: is this a thing?
               (sloth.concat' sloth.homeDir "/.thunderbird")
               (sloth.concat' sloth.xdgCacheHome "/.mozilla")
               # download without a file picker prompt
